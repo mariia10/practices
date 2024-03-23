@@ -2,20 +2,20 @@ package mariia.budiak.practices.controller;
 
 import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
-import mariia.budiak.practices.model.AffineRecursiveKeys;
-import mariia.budiak.practices.service.AffineRecursiveCipherService;
+import mariia.budiak.practices.model.AffineRecurrentKeys;
+import mariia.budiak.practices.service.AffineRecurrentCipherService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 
 @RestController
-@RequestMapping("affine-recursive-cipher/")
+@RequestMapping("affine-recurrent-cipher/")
 @RequiredArgsConstructor
-public class AffineRecursiveCipherController {
-    private final AffineRecursiveCipherService service;
+public class AffineRecurrentCipherController {
+    private final AffineRecurrentCipherService service;
 
     @RequestMapping(value = "/uploadKeys", method = RequestMethod.POST)
-    public void custom(@RequestBody AffineRecursiveKeys keys) {
+    public void custom(@RequestBody AffineRecurrentKeys keys) {
         service.setSubKeys(keys);
     }
 

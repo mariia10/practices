@@ -2,7 +2,7 @@ package mariia.budiak.practices.service;
 
 import lombok.Getter;
 import mariia.budiak.practices.model.AffineKey;
-import mariia.budiak.practices.model.AffineRecursiveKeys;
+import mariia.budiak.practices.model.AffineRecurrentKeys;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -11,14 +11,14 @@ import java.util.ArrayList;
 import java.util.Map;
 
 @Service
-public class AffineRecursiveCipherService extends CommonAffineFunctionality {
+public class AffineRecurrentCipherService extends CommonAffineFunctionality {
 
     private static final Integer LIMIT = 10000;
 
     @Getter
-    private final AffineRecursiveKeys keys = new AffineRecursiveKeys();
+    private final AffineRecurrentKeys keys = new AffineRecurrentKeys();
 
-    public void setSubKeys(AffineRecursiveKeys keys) {
+    public void setSubKeys(AffineRecurrentKeys keys) {
         if (keys.getAffineKeyHashMap().size() != 2) {
             throw new HttpClientErrorException(HttpStatus.UNPROCESSABLE_ENTITY,
                     "необходимо задать 2 ключа");
