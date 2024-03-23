@@ -1,0 +1,80 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath('io.github.robwin:jgitflow-gradle-plugin:0.6.0')
+    }
+}
+
+plugins {
+    id 'org.springframework.boot' version '2.3.2.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+    id 'java'
+    id 'checkstyle'
+}
+apply plugin: 'io.github.robwin.jgitflow'
+
+group = 'mariia.budiak'
+version "${version}"
+sourceCompatibility = '11'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+sourceSets {
+    main {
+        java.srcDirs = ['src/main/java', "${buildDir}/generated/main"]
+        resources.srcDirs = ['src/main/resources']
+    }
+}
+
+configurations.all {
+    exclude module: 'slf4j-log4j12'
+}
+
+initJGitflow {
+    versiontag = 'v'
+}
+
+checkstyle {
+    configFile file('config/checkstyle/checkstyle.xml');
+    toolVersion '8.39';    // your choice here
+    ignoreFailures = true
+}
+
+dependencies {
+
+
+
+    implementation 'org.springframework.boot:spring-boot-starter-web' //
+    implementation 'io.springfox:springfox-swagger2:2.9.2'
+    implementation 'io.springfox:springfox-swagger-ui:2.9.2'
+
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
+
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.17.0'
+    implementation 'org.json:json:20240303'
+    implementation 'com.h2database:h2'
+
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+
+    compileOnly 'org.projectlombok:lombok:1.18.28'
+    annotationProcessor 'org.projectlombok:lombok:1.18.28'
+    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+}
+
+
+
+
+
