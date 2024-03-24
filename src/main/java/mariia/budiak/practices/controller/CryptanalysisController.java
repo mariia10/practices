@@ -13,7 +13,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import java.util.HashMap;
 
 @RestController
-@RequestMapping("affine-recurrent-cipher/")
+@RequestMapping("cryptanalysis/")
 @RequiredArgsConstructor
 public class CryptanalysisController {
     private final CryptanalysisService service;
