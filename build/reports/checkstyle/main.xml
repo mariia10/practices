@@ -1,39 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <checkstyle version="8.39">
-<file name="/home/mariia/Study/магистратура/криптография/practices/src/main/java/mariia/budiak/practices/PracticesApp.java">
+<file name="/home/mariia/Study/магистратура/practices/src/main/java/mariia/budiak/practices/PracticesApp.java">
 </file>
-<file name="/home/mariia/Study/магистратура/криптография/practices/src/main/java/mariia/budiak/practices/config/SwaggerConfiguration.java">
+<file name="/home/mariia/Study/магистратура/practices/src/main/java/mariia/budiak/practices/config/SwaggerConfiguration.java">
 </file>
-<file name="/home/mariia/Study/магистратура/криптография/practices/src/main/java/mariia/budiak/practices/controller/AffineCipherController.java">
+<file name="/home/mariia/Study/магистратура/practices/src/main/java/mariia/budiak/practices/controller/AESController.java">
+</file>
+<file name="/home/mariia/Study/магистратура/practices/src/main/java/mariia/budiak/practices/controller/AffineCipherController.java">
 <error line="8" column="47" severity="error" message="Using the &apos;.*&apos; form of import should be avoided - org.springframework.web.bind.annotation.*." source="com.puppycrawl.tools.checkstyle.checks.imports.AvoidStarImportCheck"/>
 <error line="24" column="9" severity="error" message="&apos;if&apos; construct must use &apos;{}&apos;s." source="com.puppycrawl.tools.checkstyle.checks.blocks.NeedBracesCheck"/>
 <error line="36" column="9" severity="error" message="&apos;if&apos; construct must use &apos;{}&apos;s." source="com.puppycrawl.tools.checkstyle.checks.blocks.NeedBracesCheck"/>
 </file>
-<file name="/home/mariia/Study/магистратура/криптография/practices/src/main/java/mariia/budiak/practices/controller/AffineRecursiveCipherController.java">
+<file name="/home/mariia/Study/магистратура/practices/src/main/java/mariia/budiak/practices/controller/AffineRecurrentCipherController.java">
 <error line="8" column="47" severity="error" message="Using the &apos;.*&apos; form of import should be avoided - org.springframework.web.bind.annotation.*." source="com.puppycrawl.tools.checkstyle.checks.imports.AvoidStarImportCheck"/>
 <error line="24" column="9" severity="error" message="&apos;if&apos; construct must use &apos;{}&apos;s." source="com.puppycrawl.tools.checkstyle.checks.blocks.NeedBracesCheck"/>
 <error line="36" column="9" severity="error" message="&apos;if&apos; construct must use &apos;{}&apos;s." source="com.puppycrawl.tools.checkstyle.checks.blocks.NeedBracesCheck"/>
 </file>
-<file name="/home/mariia/Study/магистратура/криптография/practices/src/main/java/mariia/budiak/practices/controller/CustomExceptionHandler.java">
+<file name="/home/mariia/Study/магистратура/practices/src/main/java/mariia/budiak/practices/controller/CryptanalysisController.java">
+<error line="22" column="12" severity="error" message="Usage of type &apos;HashMap&apos; is not allowed." source="com.puppycrawl.tools.checkstyle.checks.coding.IllegalTypeCheck"/>
+<error line="23" column="9" severity="error" message="&apos;if&apos; construct must use &apos;{}&apos;s." source="com.puppycrawl.tools.checkstyle.checks.blocks.NeedBracesCheck"/>
 </file>
-<file name="/home/mariia/Study/магистратура/криптография/practices/src/main/java/mariia/budiak/practices/controller/SubstitutionCipherController.java">
+<file name="/home/mariia/Study/магистратура/practices/src/main/java/mariia/budiak/practices/controller/CustomExceptionHandler.java">
+</file>
+<file name="/home/mariia/Study/магистратура/practices/src/main/java/mariia/budiak/practices/controller/SubstitutionCipherController.java">
 <error line="9" column="8" severity="error" message="Unused import - org.springframework.stereotype.Controller." source="com.puppycrawl.tools.checkstyle.checks.imports.UnusedImportsCheck"/>
 <error line="10" column="47" severity="error" message="Using the &apos;.*&apos; form of import should be avoided - org.springframework.web.bind.annotation.*." source="com.puppycrawl.tools.checkstyle.checks.imports.AvoidStarImportCheck"/>
 <error line="43" column="9" severity="error" message="&apos;if&apos; construct must use &apos;{}&apos;s." source="com.puppycrawl.tools.checkstyle.checks.blocks.NeedBracesCheck"/>
 <error line="59" column="9" severity="error" message="&apos;if&apos; construct must use &apos;{}&apos;s." source="com.puppycrawl.tools.checkstyle.checks.blocks.NeedBracesCheck"/>
 </file>
-<file name="/home/mariia/Study/магистратура/криптография/practices/src/main/java/mariia/budiak/practices/model/AffineKey.java">
+<file name="/home/mariia/Study/магистратура/practices/src/main/java/mariia/budiak/practices/model/AffineKey.java">
 <error line="8" column="8" severity="error" message="Unused import - java.util.Arrays." source="com.puppycrawl.tools.checkstyle.checks.imports.UnusedImportsCheck"/>
 <error line="9" column="8" severity="error" message="Unused import - java.util.List." source="com.puppycrawl.tools.checkstyle.checks.imports.UnusedImportsCheck"/>
 <error line="17" column="5" severity="error" message="&apos;VARIABLE_DEF&apos; should be separated from previous statement." source="com.puppycrawl.tools.checkstyle.checks.whitespace.EmptyLineSeparatorCheck"/>
 </file>
-<file name="/home/mariia/Study/магистратура/криптография/practices/src/main/java/mariia/budiak/practices/model/AffineRecursiveKeys.java">
+<file name="/home/mariia/Study/магистратура/practices/src/main/java/mariia/budiak/practices/model/AffineRecurrentKeys.java">
 <error line="11" column="19" severity="error" message="Usage of type &apos;HashMap&apos; is not allowed." source="com.puppycrawl.tools.checkstyle.checks.coding.IllegalTypeCheck"/>
 </file>
-<file name="/home/mariia/Study/магистратура/криптография/practices/src/main/java/mariia/budiak/practices/model/Match.java">
+<file name="/home/mariia/Study/магистратура/practices/src/main/java/mariia/budiak/practices/model/Match.java">
 <error line="10" column="5" severity="error" message="&apos;VARIABLE_DEF&apos; should be separated from previous statement." source="com.puppycrawl.tools.checkstyle.checks.whitespace.EmptyLineSeparatorCheck"/>
 </file>
-<file name="/home/mariia/Study/магистратура/криптография/practices/src/main/java/mariia/budiak/practices/model/SubKey.java">
+<file name="/home/mariia/Study/магистратура/practices/src/main/java/mariia/budiak/practices/model/SubKey.java">
 <error line="7" column="17" severity="error" message="Using the &apos;.*&apos; form of import should be avoided - java.util.*." source="com.puppycrawl.tools.checkstyle.checks.imports.AvoidStarImportCheck"/>
 <error line="22" column="5" severity="error" message="&apos;VARIABLE_DEF&apos; should be separated from previous statement." source="com.puppycrawl.tools.checkstyle.checks.whitespace.EmptyLineSeparatorCheck"/>
 <error line="24" column="5" severity="error" message="&apos;VARIABLE_DEF&apos; should be separated from previous statement." source="com.puppycrawl.tools.checkstyle.checks.whitespace.EmptyLineSeparatorCheck"/>
@@ -103,16 +109,54 @@
 <error line="101" column="15" severity="error" message="WhitespaceAround: &apos;=&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
 <error line="101" column="15" severity="error" message="WhitespaceAround: &apos;=&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
 </file>
-<file name="/home/mariia/Study/магистратура/криптография/practices/src/main/java/mariia/budiak/practices/service/AffineCipherService.java">
+<file name="/home/mariia/Study/магистратура/practices/src/main/java/mariia/budiak/practices/service/AES.java">
+<error line="15" column="5" severity="error" message="Static variable definition in wrong order." source="com.puppycrawl.tools.checkstyle.checks.coding.DeclarationOrderCheck"/>
+<error line="16" column="5" severity="error" message="&apos;VARIABLE_DEF&apos; should be separated from previous statement." source="com.puppycrawl.tools.checkstyle.checks.whitespace.EmptyLineSeparatorCheck"/>
+<error line="16" column="17" severity="error" message="Name &apos;Nk&apos; must match pattern &apos;^[a-z][a-zA-Z0-9]*$&apos;." source="com.puppycrawl.tools.checkstyle.checks.naming.MemberNameCheck"/>
+<error line="19" column="17" severity="error" message="Name &apos;Nr&apos; must match pattern &apos;^[a-z][a-zA-Z0-9]*$&apos;." source="com.puppycrawl.tools.checkstyle.checks.naming.MemberNameCheck"/>
+<error line="26" column="5" severity="error" message="&apos;VARIABLE_DEF&apos; should be separated from previous statement." source="com.puppycrawl.tools.checkstyle.checks.whitespace.EmptyLineSeparatorCheck"/>
+<error line="32" column="5" severity="error" message="Static variable definition in wrong order." source="com.puppycrawl.tools.checkstyle.checks.coding.DeclarationOrderCheck"/>
+<error line="51" column="5" severity="error" message="Static variable definition in wrong order." source="com.puppycrawl.tools.checkstyle.checks.coding.DeclarationOrderCheck"/>
+<error line="69" column="5" severity="error" message="Static variable definition in wrong order." source="com.puppycrawl.tools.checkstyle.checks.coding.DeclarationOrderCheck"/>
+<error line="95" column="5" severity="error" message="Method length is 40 lines (max allowed is 25)." source="com.puppycrawl.tools.checkstyle.checks.sizes.MethodLengthCheck"/>
+<error line="240" column="9" severity="error" message="Each variable declaration must be in its own statement." source="com.puppycrawl.tools.checkstyle.checks.coding.MultipleVariableDeclarationsCheck"/>
+<error line="242" severity="error" message="Line is longer than 121 characters (found 122)." source="com.puppycrawl.tools.checkstyle.checks.sizes.LineLengthCheck"/>
+<error line="243" severity="error" message="Line is longer than 121 characters (found 122)." source="com.puppycrawl.tools.checkstyle.checks.sizes.LineLengthCheck"/>
+<error line="244" severity="error" message="Line is longer than 121 characters (found 122)." source="com.puppycrawl.tools.checkstyle.checks.sizes.LineLengthCheck"/>
+<error line="245" severity="error" message="Line is longer than 121 characters (found 122)." source="com.puppycrawl.tools.checkstyle.checks.sizes.LineLengthCheck"/>
+<error line="255" column="5" severity="error" message="Method length is 30 lines (max allowed is 25)." source="com.puppycrawl.tools.checkstyle.checks.sizes.MethodLengthCheck"/>
+<error line="256" column="9" severity="error" message="Each variable declaration must be in its own statement." source="com.puppycrawl.tools.checkstyle.checks.coding.MultipleVariableDeclarationsCheck"/>
+<error line="307" column="9" severity="error" message="Each variable declaration must be in its own statement." source="com.puppycrawl.tools.checkstyle.checks.coding.MultipleVariableDeclarationsCheck"/>
+<error line="333" column="9" severity="error" message="Each variable declaration must be in its own statement." source="com.puppycrawl.tools.checkstyle.checks.coding.MultipleVariableDeclarationsCheck"/>
+<error line="368" column="5" severity="error" message="Method length is 32 lines (max allowed is 25)." source="com.puppycrawl.tools.checkstyle.checks.sizes.MethodLengthCheck"/>
+<error line="369" column="9" severity="error" message="Each variable declaration must be in its own statement." source="com.puppycrawl.tools.checkstyle.checks.coding.MultipleVariableDeclarationsCheck"/>
+<error line="436" column="19" severity="error" message="Name &apos;ECB_encrypt&apos; must match pattern &apos;^[a-z][a-zA-Z0-9]*$&apos;." source="com.puppycrawl.tools.checkstyle.checks.naming.MethodNameCheck"/>
+<error line="438" column="43" severity="error" message="WhitespaceAround: &apos;+=&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="438" column="43" severity="error" message="WhitespaceAround: &apos;+=&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="448" column="19" severity="error" message="Name &apos;ECB_decrypt&apos; must match pattern &apos;^[a-z][a-zA-Z0-9]*$&apos;." source="com.puppycrawl.tools.checkstyle.checks.naming.MethodNameCheck"/>
+<error line="450" column="43" severity="error" message="WhitespaceAround: &apos;+=&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="450" column="43" severity="error" message="WhitespaceAround: &apos;+=&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="460" column="19" severity="error" message="Name &apos;CBC_encrypt&apos; must match pattern &apos;^[a-z][a-zA-Z0-9]*$&apos;." source="com.puppycrawl.tools.checkstyle.checks.naming.MethodNameCheck"/>
+<error line="463" column="43" severity="error" message="WhitespaceAround: &apos;+=&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="463" column="43" severity="error" message="WhitespaceAround: &apos;+=&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="466" column="17" severity="error" message="&apos;if&apos; construct must use &apos;{}&apos;s." source="com.puppycrawl.tools.checkstyle.checks.blocks.NeedBracesCheck"/>
+<error line="477" column="19" severity="error" message="Name &apos;CBC_decrypt&apos; must match pattern &apos;^[a-z][a-zA-Z0-9]*$&apos;." source="com.puppycrawl.tools.checkstyle.checks.naming.MethodNameCheck"/>
+<error line="480" column="43" severity="error" message="WhitespaceAround: &apos;+=&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="480" column="43" severity="error" message="WhitespaceAround: &apos;+=&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="484" column="17" severity="error" message="&apos;if&apos; construct must use &apos;{}&apos;s." source="com.puppycrawl.tools.checkstyle.checks.blocks.NeedBracesCheck"/>
+</file>
+<file name="/home/mariia/Study/магистратура/practices/src/main/java/mariia/budiak/practices/service/AESService.java">
+</file>
+<file name="/home/mariia/Study/магистратура/practices/src/main/java/mariia/budiak/practices/service/AffineCipherService.java">
 <error line="5" column="8" severity="error" message="Unused import - org.springframework.http.HttpStatus." source="com.puppycrawl.tools.checkstyle.checks.imports.UnusedImportsCheck"/>
 <error line="7" column="8" severity="error" message="Unused import - org.springframework.web.client.HttpClientErrorException." source="com.puppycrawl.tools.checkstyle.checks.imports.UnusedImportsCheck"/>
 <error line="9" column="17" severity="error" message="Using the &apos;.*&apos; form of import should be avoided - java.util.*." source="com.puppycrawl.tools.checkstyle.checks.imports.AvoidStarImportCheck"/>
 <error line="12" column="67" severity="error" message="WhitespaceAround: &apos;{&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
 <error line="25" column="5" severity="error" message="&apos;METHOD_DEF&apos; should be separated from previous statement." source="com.puppycrawl.tools.checkstyle.checks.whitespace.EmptyLineSeparatorCheck"/>
 </file>
-<file name="/home/mariia/Study/магистратура/криптография/practices/src/main/java/mariia/budiak/practices/service/AffineRecursiveCipherService.java">
+<file name="/home/mariia/Study/магистратура/practices/src/main/java/mariia/budiak/practices/service/AffineRecurrentCipherService.java">
 </file>
-<file name="/home/mariia/Study/магистратура/криптография/practices/src/main/java/mariia/budiak/practices/service/CommonAffineFunctionality.java">
+<file name="/home/mariia/Study/магистратура/practices/src/main/java/mariia/budiak/practices/service/CommonAffineFunctionality.java">
 <error line="11" column="1" severity="error" message="Name &apos;CommonAffineFunctionality&apos; must match pattern &apos;^Abstract.+$&apos;." source="com.puppycrawl.tools.checkstyle.checks.naming.AbstractClassNameCheck"/>
 <error line="11" column="10" severity="error" message="&apos;public&apos; modifier out of order with the JLS suggestions." source="com.puppycrawl.tools.checkstyle.checks.modifier.ModifierOrderCheck"/>
 <error line="12" column="25" severity="error" message="Usage of type &apos;HashMap&apos; is not allowed." source="com.puppycrawl.tools.checkstyle.checks.coding.IllegalTypeCheck"/>
@@ -121,7 +165,19 @@
 <error line="30" column="9" severity="error" message="&apos;if&apos; construct must use &apos;{}&apos;s." source="com.puppycrawl.tools.checkstyle.checks.blocks.NeedBracesCheck"/>
 <error line="38" column="9" severity="error" message="Each variable declaration must be in its own statement." source="com.puppycrawl.tools.checkstyle.checks.coding.MultipleVariableDeclarationsCheck"/>
 </file>
-<file name="/home/mariia/Study/магистратура/криптография/practices/src/main/java/mariia/budiak/practices/service/SubstitutionCipherService.java">
+<file name="/home/mariia/Study/магистратура/practices/src/main/java/mariia/budiak/practices/service/CryptanalysisService.java">
+<error line="10" column="12" severity="error" message="Usage of type &apos;HashMap&apos; is not allowed." source="com.puppycrawl.tools.checkstyle.checks.coding.IllegalTypeCheck"/>
+<error line="10" column="75" severity="error" message="WhitespaceAround: &apos;{&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="12" column="9" severity="error" message="WhitespaceAround: &apos;for&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="12" column="56" severity="error" message="WhitespaceAround: &apos;{&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="15" column="9" severity="error" message="WhitespaceAround: &apos;for&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="15" column="42" severity="error" message="WhitespaceAround: &apos;{&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="16" column="13" severity="error" message="WhitespaceAround: &apos;if&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="16" column="40" severity="error" message="WhitespaceAround: &apos;{&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="18" column="40" severity="error" message="WhitespaceAround: &apos;+&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="18" column="40" severity="error" message="WhitespaceAround: &apos;+&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+</file>
+<file name="/home/mariia/Study/магистратура/practices/src/main/java/mariia/budiak/practices/service/SubstitutionCipherService.java">
 <error line="21" column="5" severity="error" message="&apos;VARIABLE_DEF&apos; should be separated from previous statement." source="com.puppycrawl.tools.checkstyle.checks.whitespace.EmptyLineSeparatorCheck"/>
 <error line="36" column="9" severity="error" message="Usage of type &apos;ArrayList&apos; is not allowed." source="com.puppycrawl.tools.checkstyle.checks.coding.IllegalTypeCheck"/>
 <error line="53" column="9" severity="error" message="Usage of type &apos;ArrayList&apos; is not allowed." source="com.puppycrawl.tools.checkstyle.checks.coding.IllegalTypeCheck"/>
