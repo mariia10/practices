@@ -1,6 +1,5 @@
 package mariia.budiak.practices.service;
 
-import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpServerErrorException;
@@ -14,11 +13,23 @@ import java.util.Scanner;
 
 @Service
 public class AESService {
-    // number of chars (32 bit)
-    private static int Nb = 4;
-    // necessary matrix for AES (sBox + inverted one & rCon)
+    /**
+     * The round constant word array
+     * Константа раунда — это слово,
+     * в котором три крайних правых байта всегда равны 0. Таким образом, эффект XOR слова с Rcon заключается в выполнении XOR только для самого левого байта слова
+     */
+
+    protected static final int[] rCon = {
+            0x01000000, 0x02000000, 0x04000000,
+            0x08000000,
+            0x10000000, 0x20000000, 0x40000000,
+            0x80000000,
+            0x1b000000, 0x36000000, 0x6c000000};
+    /**
+     * Матрица sbox
+     * Таблица нелинейных замен, используемая в нескольких преобразованиях байтовых замен и в процедуре расширения ключа для выполнения замены байтового значения один к одному
+     */
     private static final int[] sBox = new int[]{
-            //0     1    2      3     4    5     6     7      8    9     A      B    C     D     E     F
             0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
             0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
             0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15,
@@ -35,6 +46,11 @@ public class AESService {
             0x70, 0x3e, 0xb5, 0x66, 0x48, 0x03, 0xf6, 0x0e, 0x61, 0x35, 0x57, 0xb9, 0x86, 0xc1, 0x1d, 0x9e,
             0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
             0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16};
+    /**
+     * Матрица rsBox (для дешифрования)
+     * Это получается применением обратного аффинного выражения
+     * преобразованиес последующим нахождением мультипликативной инферсии  в GF(2^8)
+     */
     private static final int[] rsBox = new int[]{
             0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
             0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb,
@@ -52,106 +68,57 @@ public class AESService {
             0x60, 0x51, 0x7f, 0xa9, 0x19, 0xb5, 0x4a, 0x0d, 0x2d, 0xe5, 0x7a, 0x9f, 0x93, 0xc9, 0x9c, 0xef,
             0xa0, 0xe0, 0x3b, 0x4d, 0xae, 0x2a, 0xf5, 0xb0, 0xc8, 0xeb, 0xbb, 0x3c, 0x83, 0x53, 0x99, 0x61,
             0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d};
-    private static final int[] rCon = new int[]{
-            0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a,
-            0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39,
-            0x72, 0xe4, 0xd3, 0xbd, 0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a,
-            0x74, 0xe8, 0xcb, 0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8,
-            0xab, 0x4d, 0x9a, 0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef,
-            0xc5, 0x91, 0x39, 0x72, 0xe4, 0xd3, 0xbd, 0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc,
-            0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb, 0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b,
-            0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a, 0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3,
-            0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39, 0x72, 0xe4, 0xd3, 0xbd, 0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94,
-            0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb, 0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20,
-            0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a, 0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35,
-            0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39, 0x72, 0xe4, 0xd3, 0xbd, 0x61, 0xc2, 0x9f,
-            0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb, 0x8d, 0x01, 0x02, 0x04,
-            0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a, 0x2f, 0x5e, 0xbc, 0x63,
-            0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39, 0x72, 0xe4, 0xd3, 0xbd,
-            0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb, 0x8d};
+
+    /**
+     * Количество столбцов (32-битных слов), составляющих state. Для этого стандарта Nb = 4
+     */
+    private static final int Nb = 4;
     // current round index
-    private int actual;
-    private int[] key;
     private int Nk;
     // количество
     private int Nr;
+
+    private int actual;
+    private int[] key;
     // state
     private int[][][] state;
 
     // key stuff
     private int[] w;
+    public void uploadKey(String textKey) {
+        var key = textKey.getBytes();
+        this.key = new int[key.length];
 
-    // Public methods
-    public byte[] encryptECB(byte[] text) {
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            for (int i = 0; i < text.length; i += 16) {
-                try {
-                    out.write(encrypt(Arrays.copyOfRange(text, i, i + 16)));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            return out.toByteArray();
-        }  catch (IOException e) {
-            throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    public byte[] encryptECBFile(MultipartFile file) {
-            try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            var bufferedWriter = new BufferedWriter(new OutputStreamWriter(baos)); InputStream inputStream = file.getInputStream(); Scanner sc = new Scanner(inputStream, StandardCharsets.UTF_8)) {
-                while (sc.hasNextLine()) {
-                    String line = sc.nextLine();
-                    bufferedWriter.write(Base64.getEncoder().encodeToString(encryptECB(fillBlock(line).getBytes()))+"\n");
-                }
-                bufferedWriter.flush();
-                if (sc.ioException() != null) {
-                    throw sc.ioException();
-                }
-                return baos.toByteArray();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-    }
-
-    public byte[] decryptECBFile(MultipartFile file) {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             var bufferedWriter = new BufferedWriter(new OutputStreamWriter(baos)); InputStream inputStream = file.getInputStream(); Scanner sc = new Scanner(inputStream, StandardCharsets.UTF_8)) {
-            while (sc.hasNextLine()) {
-                String line = sc.nextLine();
-                bufferedWriter.write(new String(decryptECB(Base64.getDecoder().decode(line)))+"\n");
-            }
-            bufferedWriter.flush();
-            if (sc.ioException() != null) {
-                throw sc.ioException();
-            }
-            return baos.toByteArray();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public String fillBlock(String text) {
-        int spaceNum = text.getBytes().length % 16 == 0 ? 0 : 16 - text.getBytes().length % 16;
-        for (int i = 0; i < spaceNum; i++) text += " ";
-        return text;
-    }
-
-    public byte[] decryptECB(byte[] text) {
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            for (int i = 0; i < text.length; i += 16) {
-                out.write(decrypt(Arrays.copyOfRange(text, i, i + 16)));
-            }
-            return out.toByteArray();
-        } catch (IOException e) {
-            throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
+        for (int i = 0; i < key.length; i++) {
+            this.key[i] = key[i];
         }
 
+        switch (key.length) {
+            case 16:
+                Nr = 10;
+                Nk = 4;
+                break;
+            case 24:
+                Nr = 12;
+                Nk = 6;
+                break;
+            case 32:
+                Nr = 14;
+                Nk = 8;
+                break;
+        }
+
+        // The storage array creation for the states.
+        // Only 2 states with 4 rows and Nb columns are required.
+        state = new int[2][4][Nb];
+
+        // The storage vector for the expansion of the key creation.
+        w = new int[Nb * (Nr + 1)];
+
+        // Key expansion
+        keyExpantion();
     }
 
-    private static int rotWord(int word) {
-        return (word << 8) | ((word & 0xFF000000) >>> 24);
-    }
 
     private static int invSubWord(int word) {
         int subWord = 0;
@@ -175,7 +142,30 @@ public class AESService {
 
     }
 
-    private static int subWord(int word) {
+    private static int xtime(int b) {
+        return (b & 0x80) == 0?
+            b << 1: (b << 1) ^ 0x11b;
+    }
+
+    /**
+     * смещение
+     * пример из статьи: 0914dff4 -> 14dff409
+     *
+     * @param word слово
+     * @return слово в представлении int
+     */
+    private int rotWord(int word) {
+        return (word << 8) | (word & 0xFF000000) >>> 24;
+    }
+
+    /**
+     * смещение
+     * пример из статьи: 0914dff4 -> 14dff409
+     *
+     * @param word слово
+     * @return слово в представлении int
+     */
+    private int subWord(int word) {
         int subWord = 0;
         for (int i = 24; i >= 0; i -= 8) {
             int in = word << i >>> 24;
@@ -184,86 +174,118 @@ public class AESService {
         return subWord;
     }
 
-    private static int xtime(int b) {
-        if ((b & 0x80) == 0) {
-            return b << 1;
+    // Public methods
+    public byte[] encryptECB(byte[] text) {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            for (int i = 0; i < text.length; i += 16) {
+                out.write(encrypt(Arrays.copyOfRange(text, i, i + 16)));
+            }
+            return out.toByteArray();
+        } catch (IOException e) {
+            throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        return (b << 1) ^ 0x11b;
     }
 
-    private static byte[] xor(byte[] a, byte[] b) {
-        byte[] result = new byte[Math.min(a.length, b.length)];
-        for (int j = 0; j < result.length; j++) {
-            int xor = a[j] ^ b[j];
-            result[j] = (byte) (0xff & xor);
+    public byte[] encryptECBFile(MultipartFile file) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             var bufferedWriter = new BufferedWriter(new OutputStreamWriter(baos)); InputStream inputStream = file.getInputStream(); Scanner sc = new Scanner(inputStream, StandardCharsets.UTF_8)) {
+            while (sc.hasNextLine()) {
+                String line = sc.nextLine();
+                bufferedWriter.write(Base64.getEncoder().encodeToString(encryptECB(fillBlock(line).getBytes())) + "\n");
+            }
+            bufferedWriter.flush();
+            if (sc.ioException() != null) {
+                throw sc.ioException();
+            }
+            return baos.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-        return result;
     }
 
-
-
-    public void uploadKey(String textKey) {
-        var key = textKey.getBytes();
-        this.key = new int[key.length];
-
-        for (int i = 0; i < key.length; i++) {
-            this.key[i] = key[i];
+    public byte[] decryptECBFile(MultipartFile file) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             var bufferedWriter = new BufferedWriter(new OutputStreamWriter(baos)); InputStream inputStream = file.getInputStream(); Scanner sc = new Scanner(inputStream, StandardCharsets.UTF_8)) {
+            while (sc.hasNextLine()) {
+                String line = sc.nextLine();
+                bufferedWriter.write(new String(decryptECB(Base64.getDecoder().decode(line))) + "\n");
+            }
+            bufferedWriter.flush();
+            if (sc.ioException() != null) {
+                throw sc.ioException();
+            }
+            return baos.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-
-        // AES standard (4*32) = 128 bits
-        Nb = 4;
-        switch (key.length) {
-            // 128 bit key
-            case 16:
-                Nr = 10;
-                Nk = 4;
-                break;
-            // 192 bit key
-            case 24:
-                Nr = 12;
-                Nk = 6;
-                break;
-            // 256 bit key
-            case 32:
-                Nr = 14;
-                Nk = 8;
-                break;
-        }
-
-        // The storage array creation for the states.
-        // Only 2 states with 4 rows and Nb columns are required.
-        state = new int[2][4][Nb];
-
-        // The storage vector for the expansion of the key creation.
-        w = new int[Nb * (Nr + 1)];
-
-        // Key expansion
-        expandKey();
     }
 
-    private void expandKey() {
+    /**
+     * дополняю блоки пустой строкой, если они короче 16
+     * @param text входной текст
+     * @return текст
+     */
+    public String fillBlock(String text) {
+        int spaceNum = text.getBytes().length % 16 == 0 ? 0 : 16 - text.getBytes().length % 16;
+        text = text + " ".repeat(spaceNum);
+        return text;
+    }
+
+    public byte[] decryptECB(byte[] text) {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            for (int i = 0; i < text.length; i += 16) {
+                out.write(decrypt(Arrays.copyOfRange(text, i, i + 16)));
+            }
+            return out.toByteArray();
+        } catch (IOException e) {
+            throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+    }
+
+   
+    /**
+     * расширяю ключи по алгоритму
+     */
+    private void keyExpantion() {
         int temp, i = 0;
         while (i < Nk) {
-            w[i] = 0x00000000;
-            w[i] |= key[4 * i] << 24;
-            w[i] |= key[4 * i + 1] << 16;
-            w[i] |= key[4 * i + 2] << 8;
-            w[i] |= key[4 * i + 3];
+            w[i] = word(key[4 * i], key[4 * i + 1], key[4 * i + 2], key[4 * i + 3]);
             i++;
         }
         i = Nk;
         while (i < Nb * (Nr + 1)) {
             temp = w[i - 1];
             if (i % Nk == 0) {
-                // apply an XOR with a constant round rCon.
-                temp = subWord(rotWord(temp)) ^ (rCon[i / Nk] << 24);
+                temp = subWord(rotWord(temp)) ^ rCon[(i / Nk)-1];
             } else if (Nk > 6 && (i % Nk == 4)) {
                 temp = subWord(temp);
-            } else {
             }
             w[i] = w[i - Nk] ^ temp;
             i++;
         }
+    }
+
+    /**
+     * строю слово из 4 байт.
+     * Передвигаю b1 влево на 24 знака в бинарном представлении
+     * Передвигаю b2 влево на 16 знаков в бинарном представлении
+     * Передвигаю b3 влево на 8 знаков в бинарном представлении
+     * Добавляю b4 в конец
+     * использую or для конткатенации
+     * Например слово состоит из 4 симоволов [81, 107, 67, 76]
+     * в бинарном представлении [1010001,1101011,1000011,1001100]
+     * в итоге получила слово:
+     *
+     * @return слово 1010001 01101011 01000011 01001100 - или 1365984076 в десятичном представлении
+     */
+    private int word(int b1, int b2, int b3, int b4) {
+        int word = 0;
+        word |= (b1) << 24;
+        word |= (b2) << 16;
+        word |= (b3) << 8;
+        word |= (b4);
+        return word;
     }
 
     private byte[] decrypt(byte[] text) {
