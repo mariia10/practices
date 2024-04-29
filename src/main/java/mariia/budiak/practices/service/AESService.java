@@ -70,27 +70,54 @@ public class AESService {
             0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d};
 
     /**
-     * Количество столбцов (32-битных слов), составляющих state. Для этого стандарта Nb = 4
+     * Количество столбцов (32-битных слов), составляющих state.
+     * Для этого стандарта Nb = 4
      */
     private static final int Nb = 4;
-    // current round index
+    /**
+     * Количество 32-битных слов,
+     * составляющих ключ шифрования. Для этого стандарта Nk = 4, 6 или 8
+     */
     private int Nk;
-    // количество
+    /**
+     * Количество раундов, которое является функцией Nk и Nb.
+     * Для этого стандарта Nr = 10, 12 или 14
+     */
     private int Nr;
-
-    private int actual;
+    /**
+     * массив для хранения ключа 16-, 24- или 32- байтных
+     */
     private int[] key;
-    // state
-    private int[][][] state;
 
-    // key stuff
+    /**
+     * массив для хранения линейного массива из 32 битных слов, полученных на основе ключа
+     * Этого достаточно,
+     * чтобы обеспечить раундовый ключ из четырех слов
+     * для начальной стадии AddRoundKey и каждого из Nr раундов шифрования
+     * Например, адлогитм расширения ключей даст 44 слова для 16-байтного ключа
+     */
     private int[] w;
+
+    private static int invSubWord(int word) {
+        int subWord = 0;
+        for (int i = 24; i >= 0; i -= 8) {
+            int in = word << i >>> 24;
+            subWord |= rsBox[in] << (24 - i);
+        }
+        return subWord;
+    }
+
+    /**
+     * загрузка ключей и инициализация массива для хранения расширенных ключей
+     *
+     * @param textKey - ключ
+     */
     public void uploadKey(String textKey) {
         var key = textKey.getBytes();
         this.key = new int[key.length];
 
         for (int i = 0; i < key.length; i++) {
-            this.key[i] = key[i];
+            this.key[i] = key[i] & 0xFF000000;
         }
 
         switch (key.length) {
@@ -107,26 +134,288 @@ public class AESService {
                 Nk = 8;
                 break;
         }
-
-        // The storage array creation for the states.
-        // Only 2 states with 4 rows and Nb columns are required.
-        state = new int[2][4][Nb];
-
-        // The storage vector for the expansion of the key creation.
         w = new int[Nb * (Nr + 1)];
-
-        // Key expansion
-        keyExpantion();
+        keyExpansion();
     }
 
+    /**
+     * расширяю ключи по алгоритму
+     * псевдокод:
+     * KeyExpansion(byte key[4*Nk], word w[Nb*(Nr+1)], Nk)
+     * begin
+     * word temp
+     * i = 0
+     * while (i < Nk)
+     * w[i] = word(key[4*i], key[4*i+1], key[4*i+2], key[4*i+3])
+     * i = i+1
+     * end while
+     * i = Nk
+     * while (i < Nb * (Nr+1)]
+     * temp = w[i-1]
+     * if (i mod Nk = 0)
+     * temp = SubWord(RotWord(temp)) xor Rcon[i/Nk]
+     * else if (Nk > 6 and i mod Nk = 4)
+     * temp = SubWord(temp)
+     * end if
+     * w[i] = w[i-Nk] xor temp
+     * i = i + 1
+     * end while
+     * end
+     */
+    private void keyExpansion() {
+        int temp, i = 0;
+        while (i < Nk) {
+            w[i] = word(key[4 * i], key[4 * i + 1], key[4 * i + 2], key[4 * i + 3]);
+            i++;
+        }
+        i = Nk;
+        while (i < Nb * (Nr + 1)) {
+            temp = w[i - 1];
+            if (i % Nk == 0) {
+                temp = subWord(rotWord(temp)) ^ rCon[(i / Nk) - 1];
+            } else if (Nk > 6 && (i % Nk == 4)) {
+                temp = subWord(temp);
+            }
+            w[i] = w[i - Nk] ^ temp;
+            i++;
+        }
+    }
 
-    private static int invSubWord(int word) {
+    /**
+     * строю слово из 4 байт или из 32 бит.
+     * Передвигаю b1 влево на 24 знака в бинарном представлении
+     * Передвигаю b2 влево на 16 знаков в бинарном представлении
+     * Передвигаю b3 влево на 8 знаков в бинарном представлении
+     * Добавляю b4 в конец
+     * использую or для конткатенации
+     * Например слово состоит из 4 симоволов [81, 107, 67, 76]
+     * в бинарном представлении [1010001,1101011,1000011,1001100]
+     * в итоге получила слово:
+     *
+     * @return слово 1010001 01101011 01000011 01001100 - или 1365984076 в десятичном представлении
+     */
+    private int word(int b1, int b2, int b3, int b4) {
+        int word = 0;
+        word |= (b1) << 24;
+        word |= (b2) << 16;
+        word |= (b3) << 8;
+        word |= (b4);
+        return word;
+    }
+
+    /**
+     * смещение
+     * пример из статьи: 0914dff4 -> 14dff409
+     *
+     * @param word слово
+     * @return слово в представлении int
+     */
+    private int rotWord(int word) {
+        return (word << 8) | (word & 0xFF000000) >>> 24;
+    }
+
+    /**
+     * subWord() — это функция, которая принимает входное четырехбайтовое слово и
+     * применяет S-блок к каждому из четырех байтов для создания выходного слова.
+     * Замена основана на значении каждого из 4 частей слова. Значение 8 бит слова определяет
+     * индекс массива suBox[значение]
+     *
+     * @param word 32-битное слово
+     * @return слово в представлении int
+     */
+    private int subWord(int word) {
         int subWord = 0;
-        for (int i = 24; i >= 0; i -= 8) {
+        for (int i = 0; i < 25; i += 8) {
+            //например, берем первые 8 бит из слова - 01010001 01101011 01000011 01001100
+            // при i = 0, перемещаем 01010001 вправо на 24 бита, получается - 00000000 00000000 00000000 01010001 или 81 в десятичном ичсислении
+            //для i = 1 01101011 ставим влево на место 01010001, затем перемещаем 01101011 вправо на 24 бита
             int in = word << i >>> 24;
-            subWord |= rsBox[in] << (24 - i);
+            //берем элемент 81 элемент из sBox, при i = 0, перемещаем значение, хранящееся в массиве побитово на 24 бита влево
+            subWord |= sBox[in] << 24 - i;
         }
         return subWord;
+    }
+
+    /**
+     * @param text входящий текст, разбивается на блоки из 16 байт, или 128 битов
+     * @return зашифрованный текст
+     */
+    public byte[] encryptECB(byte[] text) {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            for (int i = 0; i < text.length; i += 16) {
+                out.write(encrypt(Arrays.copyOfRange(text, i, i + 16)));
+            }
+            return out.toByteArray();
+        } catch (IOException e) {
+            throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * @param file входящий файл для зашифрования, расширение txt,
+     *             Считывается построчно
+     *             Строки разбиваются на блоки из 16 байт, или 128 битов
+     * @return файл с зашифрованным текстом в формате base64
+     */
+    public byte[] encryptECBFile(MultipartFile file) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             var bufferedWriter = new BufferedWriter(new OutputStreamWriter(baos)); InputStream inputStream = file.getInputStream(); Scanner sc = new Scanner(inputStream, StandardCharsets.UTF_8)) {
+            while (sc.hasNextLine()) {
+                String line = sc.nextLine();
+                bufferedWriter.write(Base64.getEncoder().encodeToString(encryptECB(fillBlock(line).getBytes())) + "\n");
+            }
+            bufferedWriter.flush();
+            if (sc.ioException() != null) {
+                throw sc.ioException();
+            }
+            return baos.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * функция для зашифровки и инициализации массива state на этапе зашифровки
+     *
+     * @param in 128 бит
+     * @return зашифрованный текст
+     */
+    private byte[] encrypt(byte[] in) {
+        byte[] out = new byte[4 * Nb];
+        int[][] state = initState(in);
+
+        cipher(state);
+        for (int i = 0; i < Nb; i++) {
+            for (int j = 0; j < 4; j++) {
+                out[i * Nb + j] = (byte) (state[j][i] & 0xff);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * функция для зашифровки
+     * содержит 4 основных функции для шифрования AddRoundKey, SubBytes, ShiftRows, MixColumns
+     * Псевдокод:
+     * Cipher(byte in[4*Nb], byte out[4*Nb], word w[Nb*(Nr+1)])
+     * begin
+     * byte state[4,Nb]
+     * state = in
+     * AddRoundKey(state, w[0, Nb-1]) // See Sec. 5.1.4
+     * for round = 1 step 1 to Nr–1
+     * SubBytes(state) // See Sec. 5.1.1
+     * ShiftRows(state) // See Sec. 5.1.2
+     * MixColumns(state) // See Sec. 5.1.3
+     * AddRoundKey(state, w[round*Nb, (round+1)*Nb-1])
+     * end for
+     * SubBytes(state)
+     * ShiftRows(state)
+     * AddRoundKey(state, w[Nr*Nb, (Nr+1)*Nb-1])
+     * out = state
+     * end
+     *
+     * @param state - массив состояния
+     */
+    private void cipher(int[][] state) {
+        addRoundKey(state, 0);
+
+        for (var round = 1; round < Nr; round++) {
+            subBytes(state);
+            shiftRows(state);
+            mixColumns(state);
+            addRoundKey(state, round);
+        }
+        subBytes(state);
+        shiftRows(state);
+        addRoundKey(state, Nr);
+    }
+
+    /**
+     * матрица состояния - state, имеющая Nb столбцов и 4 строки
+     * round - раунд ключа w, который нужно добавить
+     * Раундовый ключ добавляется к состоянию простым побитовым - Операция XOR
+     * Напимер, round = 0 и w[0]=[01010001 01101011 01000011 01001100], state[0][0] = 11111111 тогда:
+     * c=0:
+     * state[0][0] = state[0][0]XOR(w[0]<< (0 * 8)) >>> 24)
+     * или
+     * state[0][0] = 11111111 XOR 00000000 00000000 00000000 01010001 = 10101110
+     * <p>
+     * Хочу отметить, что данная запись - (w[round * Nb + c] << (r * 8)) >>> 24
+     * со сдвигом 32 битной записи сначала на r * 8 влево и затем на 24 вправо,
+     * позволяет вычленять 8 соответсвующих бит из 32-битной записи - после этой операции получу
+     * при r=0 - 00000000 00000000 00000000 01010001
+     */
+    private void addRoundKey(int[][] state, int round) {
+        for (int c = 0; c < Nb; c++) {
+            for (int r = 0; r < 4; r++) {
+                state[r][c] = state[r][c] ^ ((w[round * Nb + c] << (r * 8)) >>> 24);
+            }
+        }
+    }
+
+    /**
+     * Преобразование SubBytes() — это нелинейная замена байтов,
+     * которая работает независимо.
+     * На каждом байте массива состояния State с помощью таблицы подстановки (S-box)
+     * Или другими словами - заменяю state значениями из матрицы S-Box по индексам, который определяется самим
+     * же значением в state
+     */
+    private void subBytes(int[][] state) {
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < Nb; j++) {
+                state[i][j] = subWord(state[i][j]) & 0xFF;
+            }
+        }
+    }
+
+    /**
+     * В преобразовании ShiftRows() байты в последних
+     * трех строках массива состояния STATE циклически сдвигаются.
+     * Первая строка, r = 0, не сдвигается, строка 4 - сдвигается на 3 позиции
+     *
+     * @param state массив состояния
+     */
+    private void shiftRows(int[][] state) {
+        for (int i = 1; i < 4; i++) {
+            shift(i, state);
+        }
+    }
+
+    private void shift(int offset, int[][] state) {
+        int[] tempState = new int[offset];
+        System.arraycopy(state[offset], 0, tempState, 0, offset);
+
+        for (var i = 0; i < Nb - offset; i++) {
+            state[offset][i] = state[offset][(i + offset) % Nb];
+        }
+        for (var i = 0; i < offset; i++) {
+            state[offset][Nb - (offset - i)] = tempState[i];
+        }
+
+    }
+
+    // Main cipher/decipher helper-methods (for 128-bit plain/cipher text in,
+    // and 128-bit cipher/plain text out) produced by the encryption algorithm.
+
+
+    // Cipher/Decipher methods
+
+
+    private void mixColumns(int[][] state) {
+        int temp0, temp1, temp2, temp3;
+        for (int c = 0; c < Nb; c++) {
+
+            temp0 = mult(0x02, state[0][c]) ^ mult(0x03, state[1][c]) ^ state[2][c] ^ state[3][c];
+            temp1 = state[0][c] ^ mult(0x02, state[1][c]) ^ mult(0x03, state[2][c]) ^ state[3][c];
+            temp2 = state[0][c] ^ state[1][c] ^ mult(0x02, state[2][c]) ^ mult(0x03, state[3][c]);
+            temp3 = mult(0x03, state[0][c]) ^ state[1][c] ^ state[2][c] ^ mult(0x02, state[3][c]);
+
+            state[0][c] = temp0;
+            state[1][c] = temp1;
+            state[2][c] = temp2;
+            state[3][c] = temp3;
+        }
+
     }
 
     private static int mult(int a, int b) {
@@ -143,64 +432,8 @@ public class AESService {
     }
 
     private static int xtime(int b) {
-        return (b & 0x80) == 0?
-            b << 1: (b << 1) ^ 0x11b;
-    }
-
-    /**
-     * смещение
-     * пример из статьи: 0914dff4 -> 14dff409
-     *
-     * @param word слово
-     * @return слово в представлении int
-     */
-    private int rotWord(int word) {
-        return (word << 8) | (word & 0xFF000000) >>> 24;
-    }
-
-    /**
-     * смещение
-     * пример из статьи: 0914dff4 -> 14dff409
-     *
-     * @param word слово
-     * @return слово в представлении int
-     */
-    private int subWord(int word) {
-        int subWord = 0;
-        for (int i = 24; i >= 0; i -= 8) {
-            int in = word << i >>> 24;
-            subWord |= sBox[in] << (24 - i);
-        }
-        return subWord;
-    }
-
-    // Public methods
-    public byte[] encryptECB(byte[] text) {
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            for (int i = 0; i < text.length; i += 16) {
-                out.write(encrypt(Arrays.copyOfRange(text, i, i + 16)));
-            }
-            return out.toByteArray();
-        } catch (IOException e) {
-            throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    public byte[] encryptECBFile(MultipartFile file) {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             var bufferedWriter = new BufferedWriter(new OutputStreamWriter(baos)); InputStream inputStream = file.getInputStream(); Scanner sc = new Scanner(inputStream, StandardCharsets.UTF_8)) {
-            while (sc.hasNextLine()) {
-                String line = sc.nextLine();
-                bufferedWriter.write(Base64.getEncoder().encodeToString(encryptECB(fillBlock(line).getBytes())) + "\n");
-            }
-            bufferedWriter.flush();
-            if (sc.ioException() != null) {
-                throw sc.ioException();
-            }
-            return baos.toByteArray();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return (b & 0x80) == 0 ?
+                b << 1 : (b << 1) ^ 0x11b;
     }
 
     public byte[] decryptECBFile(MultipartFile file) {
@@ -222,6 +455,7 @@ public class AESService {
 
     /**
      * дополняю блоки пустой строкой, если они короче 16
+     *
      * @param text входной текст
      * @return текст
      */
@@ -243,89 +477,44 @@ public class AESService {
 
     }
 
-   
-    /**
-     * расширяю ключи по алгоритму
-     */
-    private void keyExpantion() {
-        int temp, i = 0;
-        while (i < Nk) {
-            w[i] = word(key[4 * i], key[4 * i + 1], key[4 * i + 2], key[4 * i + 3]);
-            i++;
-        }
-        i = Nk;
-        while (i < Nb * (Nr + 1)) {
-            temp = w[i - 1];
-            if (i % Nk == 0) {
-                temp = subWord(rotWord(temp)) ^ rCon[(i / Nk)-1];
-            } else if (Nk > 6 && (i % Nk == 4)) {
-                temp = subWord(temp);
-            }
-            w[i] = w[i - Nk] ^ temp;
-            i++;
-        }
-    }
+    private byte[] decrypt(byte[] in) {
+        byte[] out = new byte[4 * Nb];
+        int[][] state = initState(in);
 
-    /**
-     * строю слово из 4 байт.
-     * Передвигаю b1 влево на 24 знака в бинарном представлении
-     * Передвигаю b2 влево на 16 знаков в бинарном представлении
-     * Передвигаю b3 влево на 8 знаков в бинарном представлении
-     * Добавляю b4 в конец
-     * использую or для конткатенации
-     * Например слово состоит из 4 симоволов [81, 107, 67, 76]
-     * в бинарном представлении [1010001,1101011,1000011,1001100]
-     * в итоге получила слово:
-     *
-     * @return слово 1010001 01101011 01000011 01001100 - или 1365984076 в десятичном представлении
-     */
-    private int word(int b1, int b2, int b3, int b4) {
-        int word = 0;
-        word |= (b1) << 24;
-        word |= (b2) << 16;
-        word |= (b3) << 8;
-        word |= (b4);
-        return word;
-    }
-
-    private byte[] decrypt(byte[] text) {
-        if (text.length != 16) {
-            throw new IllegalArgumentException("Only 16-byte blocks can be encrypted");
-        }
-        byte[] out = new byte[text.length];
-
-        for (int i = 0; i < Nb; i++) { // columns
-            for (int j = 0; j < 4; j++) { // rows
-                state[0][j][i] = text[i * Nb + j] & 0xff;
-            }
-        }
-
-        decipher(state[0], state[1]);
+        decipher(state);
         for (int i = 0; i < Nb; i++) {
             for (int j = 0; j < 4; j++) {
-                out[i * Nb + j] = (byte) (state[1][j][i] & 0xff);
+                out[i * Nb + j] = (byte) (state[j][i] & 0xff);
             }
         }
         return out;
 
     }
 
-    private void decipher(int[][] in, int[][] out) {
-        for (int i = 0; i < in.length; i++) {
-            System.arraycopy(in[i], 0, out[i], 0, in.length);
+    private int[][] initState(byte[] in) {
+        var state = new int[4][Nb];
+
+        for (int i = 0; i < Nb; i++) {
+            for (int j = 0; j < 4; j++) {
+                state[j][i] = in[i * Nb + j] & 0xff;
+            }
         }
-        actual = Nr;
-        addRoundKey(out, actual);
+        return state;
+    }
+
+    private void decipher(int[][] state) {
+        var actual = Nr;
+        addRoundKey(state, actual);
 
         for (actual = Nr - 1; actual > 0; actual--) {
-            invShiftRows(out);
-            invSubBytes(out);
-            addRoundKey(out, actual);
-            invMixColumnas(out);
+            invShiftRows(state);
+            invSubBytes(state);
+            addRoundKey(state, actual);
+            invMixColumnas(state);
         }
-        invShiftRows(out);
-        invSubBytes(out);
-        addRoundKey(out, actual);
+        invShiftRows(state);
+        invSubBytes(state);
+        addRoundKey(state, actual);
 
     }
 
@@ -382,117 +571,4 @@ public class AESService {
             state[3][c] = temp3;
         }
     }
-
-    // Main cipher/decipher helper-methods (for 128-bit plain/cipher text in,
-    // and 128-bit cipher/plain text out) produced by the encryption algorithm.
-    private byte[] encrypt(byte[] text) {
-        if (text.length != 16) {
-            throw new IllegalArgumentException("Only 16-byte blocks can be encrypted");
-        }
-        byte[] out = new byte[text.length];
-
-        for (int i = 0; i < Nb; i++) { // columns
-            for (int j = 0; j < 4; j++) { // rows
-                state[0][j][i] = text[i * Nb + j] & 0xff;
-            }
-        }
-
-        cipher(state[0], state[1]);
-        for (int i = 0; i < Nb; i++) {
-            for (int j = 0; j < 4; j++) {
-                out[i * Nb + j] = (byte) (state[1][j][i] & 0xff);
-            }
-        }
-        return out;
-    }
-
-    // Cipher/Decipher methods
-    private void cipher(int[][] in, int[][] out) {
-        for (int i = 0; i < in.length; i++) {
-            System.arraycopy(in[i], 0, out[i], 0, in.length);
-        }
-        actual = 0;
-        addRoundKey(out, actual);
-
-        for (actual = 1; actual < Nr; actual++) {
-            subBytes(out);
-            shiftRows(out);
-            mixColumns(out);
-            addRoundKey(out, actual);
-        }
-        subBytes(out);
-        shiftRows(out);
-        addRoundKey(out, actual);
-    }
-
-    private void shiftRows(int[][] state) {
-        int temp1, temp2, temp3, i;
-
-        // row 1
-        temp1 = state[1][0];
-        for (i = 0; i < Nb - 1; i++) {
-            state[1][i] = state[1][(i + 1) % Nb];
-        }
-        state[1][Nb - 1] = temp1;
-
-        // row 2, moves 1-byte
-        temp1 = state[2][0];
-        temp2 = state[2][1];
-        for (i = 0; i < Nb - 2; i++) {
-            state[2][i] = state[2][(i + 2) % Nb];
-        }
-        state[2][Nb - 2] = temp1;
-        state[2][Nb - 1] = temp2;
-
-        // row 3, moves 2-bytes
-        temp1 = state[3][0];
-        temp2 = state[3][1];
-        temp3 = state[3][2];
-        for (i = 0; i < Nb - 3; i++) {
-            state[3][i] = state[3][(i + 3) % Nb];
-        }
-        state[3][Nb - 3] = temp1;
-        state[3][Nb - 2] = temp2;
-        state[3][Nb - 1] = temp3;
-
-    }
-
-    private void mixColumns(int[][] state) {
-        int temp0, temp1, temp2, temp3;
-        for (int c = 0; c < Nb; c++) {
-
-            temp0 = mult(0x02, state[0][c]) ^ mult(0x03, state[1][c]) ^ state[2][c] ^ state[3][c];
-            temp1 = state[0][c] ^ mult(0x02, state[1][c]) ^ mult(0x03, state[2][c]) ^ state[3][c];
-            temp2 = state[0][c] ^ state[1][c] ^ mult(0x02, state[2][c]) ^ mult(0x03, state[3][c]);
-            temp3 = mult(0x03, state[0][c]) ^ state[1][c] ^ state[2][c] ^ mult(0x02, state[3][c]);
-
-            state[0][c] = temp0;
-            state[1][c] = temp1;
-            state[2][c] = temp2;
-            state[3][c] = temp3;
-        }
-
-    }
-
-    private void subBytes(int[][] state) {
-        for (int i = 0; i < 4; i++) {
-            for (int j = 0; j < Nb; j++) {
-                state[i][j] = subWord(state[i][j]) & 0xFF;
-            }
-        }
-    }
-
-    // The 128 bits of a state are an XOR offset applied to them with the 128 bits of the key expended.
-    // s: state matrix that has Nb columns and 4 rows.
-    // Round: A round of the key w to be added.
-    // s: returns the addition of the key per round
-    private void addRoundKey(int[][] s, int round) {
-        for (int c = 0; c < Nb; c++) {
-            for (int r = 0; r < 4; r++) {
-                s[r][c] = s[r][c] ^ ((w[round * Nb + c] << (r * 8)) >>> 24);
-            }
-        }
-    }
-
-
 }
