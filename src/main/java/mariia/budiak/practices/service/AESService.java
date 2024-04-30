@@ -1,5 +1,6 @@
 package mariia.budiak.practices.service;
 
+import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpServerErrorException;
@@ -10,6 +11,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Scanner;
+
+import static java.lang.System.in;
 
 @Service
 public class AESService {
@@ -97,15 +100,6 @@ public class AESService {
      * Например, адлогитм расширения ключей даст 44 слова для 16-байтного ключа
      */
     private int[] w;
-
-    private static int invSubWord(int word) {
-        int subWord = 0;
-        for (int i = 24; i >= 0; i -= 8) {
-            int in = word << i >>> 24;
-            subWord |= rsBox[in] << (24 - i);
-        }
-        return subWord;
-    }
 
     /**
      * загрузка ключей и инициализация массива для хранения расширенных ключей
@@ -262,7 +256,8 @@ public class AESService {
              var bufferedWriter = new BufferedWriter(new OutputStreamWriter(baos)); InputStream inputStream = file.getInputStream(); Scanner sc = new Scanner(inputStream, StandardCharsets.UTF_8)) {
             while (sc.hasNextLine()) {
                 String line = sc.nextLine();
-                bufferedWriter.write(Base64.getEncoder().encodeToString(encryptECB(fillBlock(line).getBytes())) + "\n");
+                bufferedWriter.write(Base64.getEncoder().encodeToString(encryptECB(fillBlock(line).getBytes())));
+                bufferedWriter.newLine();
             }
             bufferedWriter.flush();
             if (sc.ioException() != null) {
@@ -394,63 +389,77 @@ public class AESService {
 
     }
 
-    // Main cipher/decipher helper-methods (for 128-bit plain/cipher text in,
-    // and 128-bit cipher/plain text out) produced by the encryption algorithm.
-
-
-    // Cipher/Decipher methods
-
-
+    /**
+     * Перемешивание колонок матрицы состояния
+     * путем определенных операций с матрицей state
+     *
+     * @param state перемешанная state
+     */
     private void mixColumns(int[][] state) {
-        int temp0, temp1, temp2, temp3;
+        int temp0, tempState1, temp2, tempState3;
         for (int c = 0; c < Nb; c++) {
 
             temp0 = mult(0x02, state[0][c]) ^ mult(0x03, state[1][c]) ^ state[2][c] ^ state[3][c];
-            temp1 = state[0][c] ^ mult(0x02, state[1][c]) ^ mult(0x03, state[2][c]) ^ state[3][c];
+            tempState1 = state[0][c] ^ mult(0x02, state[1][c]) ^ mult(0x03, state[2][c]) ^ state[3][c];
             temp2 = state[0][c] ^ state[1][c] ^ mult(0x02, state[2][c]) ^ mult(0x03, state[3][c]);
-            temp3 = mult(0x03, state[0][c]) ^ state[1][c] ^ state[2][c] ^ mult(0x02, state[3][c]);
+            tempState3 = mult(0x03, state[0][c]) ^ state[1][c] ^ state[2][c] ^ mult(0x02, state[3][c]);
 
             state[0][c] = temp0;
-            state[1][c] = temp1;
+            state[1][c] = tempState1;
             state[2][c] = temp2;
-            state[3][c] = temp3;
+            state[3][c] = tempState3;
         }
 
     }
 
-    private static int mult(int a, int b) {
-        int sum = 0;
-        while (a != 0) { // while it is not 0
-            if ((a & 1) != 0) { // check if the first bit is 1
-                sum = sum ^ b; // add b from the smallest bit
+    /**
+     * Для алгоритма AES неприводимый многочлен равен m(x) = x^8 + x^4 + x^3 + x +1 или
+     * в шеснадцатиричной нотации - 0x11b (283)
+     * По примеру из статьи
+     * {57} • {13} = {fe}
+     * {57} • {02} = xtime({57}) = {ae}
+     * {57} • {04} = xtime({ae}) = {47}
+     * {57} • {08} = xtime({47}) = {8e}
+     * {57} • {10} = xtime({8e}) = {07}
+     * <p>
+     * {57} • ({01} xor {02} xor {10}) = {57} xor {ae} xor {07}
+     * <p>
+     * например, для {02} будем иметь {b}•({02}) или - xtime({b})
+     * для {03} будем иметь {b}•({01}xor{02}) или {b}^xtime({b})
+     *
+     * @return результат мультипликации
+     */
+    private int mult(int a, int b) {
+        // {b}*{(01)xor{02}} для 3
+        // {b}*{{02}} для 2
+        int tmpB = 0;
+        while (a != 0) {
+            //определяю нечетность по наименьшему биту
+            if ((a & 1) != 0) {
+                //собираем
+                tmpB = tmpB ^ b;
             }
-            b = xtime(b); // bit shift left mod 0x11b if necessary;
-            a = a >>> 1; // lowest bit of "a" was used so shift right
+            b = xtime(b); // умножение многочлена на x;
+            //0111>0011
+            a = a >>> 1; //отнимаем сразу 2 в dec
         }
-        return sum;
 
+        return tmpB;
     }
 
-    private static int xtime(int b) {
+    /**
+     * умножение на x ( x = {02} в поле GF(2^8) ) это сдвиг влево многочлена b на один бит
+     * Например,
+     * Умножим 0000 0010 на  1111 1111 (или 2 на 255 по модулю 283)
+     * Если у b до сдвига ведущий бит был равен 1 при помощи (b & 0X80) проверяем это условие,
+     * Отстаток от деления будет вероятно, полученный результат надо будет отнять от многочлена (283)
+     * После сдвига получаем: 11111 1110 xor 10001 1011 = 1110 0101
+     *
+     * @return отстаток от деления
+     */
+    private int xtime(int b) {
         return (b & 0x80) == 0 ?
                 b << 1 : (b << 1) ^ 0x11b;
-    }
-
-    public byte[] decryptECBFile(MultipartFile file) {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             var bufferedWriter = new BufferedWriter(new OutputStreamWriter(baos)); InputStream inputStream = file.getInputStream(); Scanner sc = new Scanner(inputStream, StandardCharsets.UTF_8)) {
-            while (sc.hasNextLine()) {
-                String line = sc.nextLine();
-                bufferedWriter.write(new String(decryptECB(Base64.getDecoder().decode(line))) + "\n");
-            }
-            bufferedWriter.flush();
-            if (sc.ioException() != null) {
-                throw sc.ioException();
-            }
-            return baos.toByteArray();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     /**
@@ -465,6 +474,36 @@ public class AESService {
         return text;
     }
 
+    /**
+     * Для дешифрования зашифрованного файла
+     *
+     * @param file файл с зашифрованным содержимым
+     * @return расшифрованный массив байт
+     */
+    public byte[] decryptECBFile(MultipartFile file) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             var bufferedWriter = new BufferedWriter(new OutputStreamWriter(baos)); InputStream inputStream = file.getInputStream(); Scanner sc = new Scanner(inputStream, StandardCharsets.UTF_8)) {
+            while (sc.hasNextLine()) {
+                String line = sc.nextLine();
+                bufferedWriter.write(new String(decryptECB(Base64.getDecoder().decode(line))));
+                bufferedWriter.newLine();
+            }
+            bufferedWriter.flush();
+            if (sc.ioException() != null) {
+                throw sc.ioException();
+            }
+            return baos.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Для дешифрования введенной фразы
+     * зашифрованная фраза зашифрованным
+     *
+     * @return расшифрованный массив байт
+     */
     public byte[] decryptECB(byte[] text) {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             for (int i = 0; i < text.length; i += 16) {
@@ -477,6 +516,12 @@ public class AESService {
 
     }
 
+    /**
+     * функция для дешифрования и инициализации массива state на этапе зашифровки
+     *
+     * @param in 128 бит
+     * @return зашифрованный текст
+     */
     private byte[] decrypt(byte[] in) {
         byte[] out = new byte[4 * Nb];
         int[][] state = initState(in);
@@ -491,6 +536,12 @@ public class AESService {
 
     }
 
+    /**
+     * функция для инициализации массива состояния - state
+     *
+     * @param in 128 бит
+     * @return зашифрованный текст
+     */
     private int[][] initState(byte[] in) {
         var state = new int[4][Nb];
 
@@ -502,52 +553,76 @@ public class AESService {
         return state;
     }
 
+    /**
+     * основаная функция для дешифрования
+     * псевдокод:
+     * InvCipher(byte in[4*Nb], byte out[4*Nb], word w[Nb*(Nr+1)])
+     * begin
+     * byte state[4,Nb]
+     * state = in
+     * AddRoundKey(state, w[Nr*Nb, (Nr+1)*Nb-1]) // See Sec. 5.1.4
+     * for round = Nr-1 step -1 downto 1
+     * InvShiftRows(state) // See Sec. 5.3.1
+     * InvSubBytes(state) // See Sec. 5.3.2
+     * AddRoundKey(state, w[round*Nb, (round+1)*Nb-1])
+     * InvMixColumns(state) // See Sec. 5.3.3
+     * end for
+     * InvShiftRows(state)
+     * InvSubBytes(state)
+     * AddRoundKey(state, w[0, Nb-1])
+     * out = state
+     * end
+     */
     private void decipher(int[][] state) {
-        var actual = Nr;
-        addRoundKey(state, actual);
-
-        for (actual = Nr - 1; actual > 0; actual--) {
+        var round = Nr;
+        addRoundKey(state, round);
+        for (round = Nr - 1; round > 0; round--) {
             invShiftRows(state);
             invSubBytes(state);
-            addRoundKey(state, actual);
-            invMixColumnas(state);
+            addRoundKey(state, round);
+            invMixColumns(state);
         }
         invShiftRows(state);
         invSubBytes(state);
-        addRoundKey(state, actual);
+        addRoundKey(state, round);
 
     }
+
+    /**
+     * InvShiftRows() является обратным преобразованию ShiftRows().
+     * Байты в последних трех строках состояния циклически сдвигаются
+     * на разное количество байтов (смещения).
+     * Первая строка r = 0 не сдвигается.
+     * Нижние три строки циклически сдвигаются на Nb - сдвиг(r, Nb) байт
+     *
+     * @param state измененная матрица состояния
+     */
 
     private void invShiftRows(int[][] state) {
-        int temp1, temp2, temp3, i;
-
-        // row 1;
-        temp1 = state[1][Nb - 1];
-        for (i = Nb - 1; i > 0; i--) {
-            state[1][i] = state[1][(i - 1) % Nb];
+        for (int i = 1; i < 4; i++) {
+            invShift(i, state);
         }
-        state[1][0] = temp1;
-        // row 2
-        temp1 = state[2][Nb - 1];
-        temp2 = state[2][Nb - 2];
-        for (i = Nb - 1; i > 1; i--) {
-            state[2][i] = state[2][(i - 2) % Nb];
-        }
-        state[2][1] = temp1;
-        state[2][0] = temp2;
-        // row 3
-        temp1 = state[3][Nb - 3];
-        temp2 = state[3][Nb - 2];
-        temp3 = state[3][Nb - 1];
-        for (i = Nb - 1; i > 2; i--) {
-            state[3][i] = state[3][(i - 3) % Nb];
-        }
-        state[3][0] = temp1;
-        state[3][1] = temp2;
-        state[3][2] = temp3;
-
     }
 
+    /**
+     * функция помогает сделать сдиг
+     */
+    private void invShift(int offset, int[][] state) {
+        int[] tempState = new int[offset];
+        for (int i = 0; i < offset; i++) {
+            tempState[i] = state[offset][Nb - (offset - i)];
+        }
+        for (int i = Nb - 1; i > (offset - 1); i--) {
+            state[offset][i] = state[offset][(i - offset) % Nb];
+        }
+        System.arraycopy(tempState, 0, state[offset], 0, offset);
+    }
+
+    /**
+     * InvSubBytes() является обратным преобразованию замены байтов,
+     * в котором обратный S-блок (rsBox) применяется к каждому байту матрицы состояния.
+     * @param state матрица состояния преобразованная
+     */
     private void invSubBytes(int[][] state) {
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < Nb; j++) {
@@ -556,19 +631,36 @@ public class AESService {
         }
     }
 
-    // Algorithm's general methods
-    private void invMixColumnas(int[][] state) {
-        int temp0, temp1, temp2, temp3;
-        for (int c = 0; c < Nb; c++) {
-            temp0 = mult(0x0e, state[0][c]) ^ mult(0x0b, state[1][c]) ^ mult(0x0d, state[2][c]) ^ mult(0x09, state[3][c]);
-            temp1 = mult(0x09, state[0][c]) ^ mult(0x0e, state[1][c]) ^ mult(0x0b, state[2][c]) ^ mult(0x0d, state[3][c]);
-            temp2 = mult(0x0d, state[0][c]) ^ mult(0x09, state[1][c]) ^ mult(0x0e, state[2][c]) ^ mult(0x0b, state[3][c]);
-            temp3 = mult(0x0b, state[0][c]) ^ mult(0x0d, state[1][c]) ^ mult(0x09, state[2][c]) ^ mult(0x0e, state[3][c]);
+    private int invSubWord(int word) {
+        int subWord = 0;
+        for (int i = 0; i < 25; i += 8) {
+            //например, берем первые 8 бит из слова - 01010001 01101011 01000011 01001100
+            // при i = 0, перемещаем 01010001 вправо на 24 бита, получается - 00000000 00000000 00000000 01010001 или 81 в десятичном ичсислении
+            //для i = 1 01101011 ставим влево на место 01010001, затем перемещаем 01101011 вправо на 24 бита
+            int in = word << i >>> 24;
+            //берем элемент 81 элемент из rsBox, при i = 0, перемещаем значение, хранящееся в массиве побитово на 24 бита влево
+            subWord |= rsBox[in] << 24 - i;
+        }
+        return subWord;
+    }
 
-            state[0][c] = temp0;
-            state[1][c] = temp1;
-            state[2][c] = temp2;
-            state[3][c] = temp3;
+    /**
+     * InvMixColumns() является обратным преобразованию MixColumns().
+     * InvMixColumns() работает с матрицей state столбец за столбцом.
+     * @param state матрица состояния
+     */
+    private void invMixColumns(int[][] state) {
+        int tempState0, tempState1, tempState2, tempState3;
+        for (int c = 0; c < Nb; c++) {
+            tempState0 = mult(0x0e, state[0][c]) ^ mult(0x0b, state[1][c]) ^ mult(0x0d, state[2][c]) ^ mult(0x09, state[3][c]);
+            tempState1 = mult(0x09, state[0][c]) ^ mult(0x0e, state[1][c]) ^ mult(0x0b, state[2][c]) ^ mult(0x0d, state[3][c]);
+            tempState2 = mult(0x0d, state[0][c]) ^ mult(0x09, state[1][c]) ^ mult(0x0e, state[2][c]) ^ mult(0x0b, state[3][c]);
+            tempState3 = mult(0x0b, state[0][c]) ^ mult(0x0d, state[1][c]) ^ mult(0x09, state[2][c]) ^ mult(0x0e, state[3][c]);
+
+            state[0][c] = tempState0;
+            state[1][c] = tempState1;
+            state[2][c] = tempState2;
+            state[3][c] = tempState3;
         }
     }
 }
