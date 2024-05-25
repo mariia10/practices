@@ -59,8 +59,12 @@ dependencies {
     implementation 'io.springfox:springfox-swagger2:2.9.2'
     implementation 'io.springfox:springfox-swagger-ui:2.9.2'
 
+    implementation 'org.bouncycastle:bcprov-jdk15on:1.60'
+
+    implementation('org.bouncycastle:bcpkix-jdk15on:1.60')
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'io.micrometer:micrometer-registry-prometheus'
+
 
 
     implementation 'com.fasterxml.jackson.core:jackson-core:2.17.0'
