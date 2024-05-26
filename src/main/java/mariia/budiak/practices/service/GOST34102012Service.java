@@ -13,17 +13,11 @@ import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.spec.ECGenParameterSpec;
 
 import java.security.*;
-import java.util.Base64;
-
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.util.test.SimpleTest;
-
 import javax.annotation.PostConstruct;
 
 @Service
@@ -32,7 +26,7 @@ public class GOST34102012Service {
     private GOST34102012 gost34102012 = new GOST34102012();
 
     @PostConstruct
-    void initKeys(){
+    void initKeys() {
         try {
             this.gost34102012 = genKey();
         } catch (Exception e) {
@@ -50,12 +44,8 @@ public class GOST34102012Service {
             throws Exception {
         KeyPairGenerator keypairGen = KeyPairGenerator.getInstance("ECGOST3410-2012", "BC");
         keypairGen.initialize(new ECGenParameterSpec("Tc26-Gost-3410-12-512-paramSetA"));
-
-        //  KeyPair kp = keyPair.generateKeyPair();
-        // создание генератора ключевой пары
-        // final java.security.KeyPairGenerator keyGen = java.security.KeyPairGenerator.getInstance("GOST3410");
-
         // генерирование ключевой пары
+        System.out.println(keypairGen.getAlgorithm());
         gost34102012.setKeyPair(keypairGen.generateKeyPair());
         return gost34102012;
     }
@@ -72,14 +62,14 @@ public class GOST34102012Service {
     }
 
     private byte[] sign(PrivateKey privateKey,
-                        byte[] data) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, OperatorCreationException, CMSException, IOException {
+                        byte[] data) throws OperatorCreationException, CMSException, IOException {
         CMSProcessableByteArray msg = new CMSProcessableByteArray(data);
         CMSSignedDataGenerator gen = new CMSSignedDataGenerator();
         ContentSigner signer = new org.bouncycastle.operator.jcajce.JcaContentSignerBuilder("GOST3411WITHECGOST3410-2012-512").setProvider("BC").build(privateKey);
-        gen.addSignerInfoGenerator(new JcaSignerInfoGeneratorBuilder(new JcaDigestCalculatorProviderBuilder().setProvider("BC").build()).build(signer, new byte[]{}));
+        gen.addSignerInfoGenerator(new SignerInfoGeneratorBuilder(new JcaDigestCalculatorProviderBuilder().setProvider("BC").build())
+                .build(signer, new byte[]{}));
         CMSSignedData sigData = gen.generate(msg, false);
-        byte[] sign = sigData.getEncoded(); //result here
-        return sign;
+        return sigData.getEncoded();
     }
 
 
@@ -104,8 +94,8 @@ public class GOST34102012Service {
 
 
     private boolean verify(PublicKey publicKey,
-                           byte[] data, byte[] signature) throws Exception {
-        boolean checkResult = false;
+                           byte[] data, byte[] signature) {
+        boolean checkResult;
 
         CMSProcessable signedContent = new CMSProcessableByteArray(data);
         CMSSignedData signedData;
@@ -129,7 +119,7 @@ public class GOST34102012Service {
     /**
      * Проверка подписи на открытом ключе
      *
-     * @param data подписываемые данные
+     * @param data      подписываемые данные
      * @param signature подпись
      * @return true - верна, false - не верна
      * @throws Exception /
