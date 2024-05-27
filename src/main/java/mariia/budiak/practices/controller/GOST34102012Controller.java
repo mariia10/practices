@@ -3,19 +3,10 @@ package mariia.budiak.practices.controller;
 import lombok.RequiredArgsConstructor;
 import mariia.budiak.practices.model.GOST34102012;
 import mariia.budiak.practices.service.GOST34102012Service;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.spec.ECGenParameterSpec;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
 
 @RestController
@@ -53,6 +44,7 @@ public class GOST34102012Controller {
 
     /**
      * подпись содержимого файла
+     *
      * @param document для подписи
      * @return подапись в base64
      * @throws Exception
@@ -66,6 +58,7 @@ public class GOST34102012Controller {
 
     /**
      * верификация подписи файла
+     *
      * @param document подписанный
      * @return подапись в base64
      * @throws Exception
@@ -73,8 +66,31 @@ public class GOST34102012Controller {
     @RequestMapping(value = "/verifySignFile", method = RequestMethod.POST,
             consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public boolean decryptFile(@RequestPart MultipartFile document,
-                @RequestParam String sign) throws Exception {
+                               @RequestParam String sign) throws Exception {
         return service.verifySignedFile(document, sign);
+    }
+
+
+    /**
+     * загрузка ключа подписи
+     *
+     * @return подапись в base64
+     * @throws Exception
+     */
+    @RequestMapping(value = "/uploadPrivateKey", method = RequestMethod.POST)
+    public String uploadPrivateKey(@RequestParam String privateKey) throws Exception {
+        return service.uploadPrivateKey(privateKey);
+    }
+
+    /**
+     * загрузка ключа подписи
+     *
+     * @return подапись в base64
+     * @throws Exception
+     */
+    @RequestMapping(value = "/uploadPublicKey", method = RequestMethod.POST)
+    public String uploadPublicKey(@RequestParam String publicKey) throws Exception {
+        return service.uploadPublicKey(publicKey);
     }
 
 }

@@ -3,27 +3,23 @@ package mariia.budiak.practices.service;
 import lombok.extern.slf4j.Slf4j;
 import mariia.budiak.practices.model.GOST34102012;
 import org.bouncycastle.cms.*;
-import org.bouncycastle.cms.jcajce.JcaSignerInfoGeneratorBuilder;
-import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoGeneratorBuilder;
 import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
-import org.bouncycastle.jcajce.provider.asymmetric.ecgost12.ECGOST2012SignatureSpi512;
-import org.bouncycastle.jce.spec.GOST3410ParameterSpec;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
+import javax.annotation.PostConstruct;
+import java.io.IOException;
+import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.spec.ECGenParameterSpec;
-
-import java.security.*;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
-import java.util.Scanner;
-import javax.annotation.PostConstruct;
 
 @Service
 @Slf4j
@@ -64,7 +60,9 @@ public class GOST34102012Service {
      * @throws Exception /
      */
     public byte[] sign(byte[] data) throws Exception {
-        return sign(gost34102012.getKeyPair().getPrivate(), data);
+        return sign(gost34102012.getUpPrivateKey()==null?
+                gost34102012.getKeyPair().getPrivate():
+                gost34102012.getUpPrivateKey(), data);
     }
 
     /**
@@ -76,16 +74,17 @@ public class GOST34102012Service {
      * @throws Exception /
      */
     public boolean verify(byte[] data, byte[] signature) throws Exception {
-        return verify(gost34102012.getKeyPair().getPublic(), data, signature);
+        return verify(gost34102012.getUpPublicKey()==null?
+                gost34102012.getKeyPair().getPublic():
+                gost34102012.getUpPublicKey(), data, signature);
     }
 
     /**
      * @param file входящий файл для подписи,
-     *
      * @return подпись
      */
     public byte[] signFile(MultipartFile file) throws Exception {
-            return sign(file.getBytes());
+        return sign(file.getBytes());
     }
 
     private byte[] sign(PrivateKey privateKey,
@@ -102,7 +101,6 @@ public class GOST34102012Service {
     /**
      * @param file входящий файл для подписи,
      * @param sign подпись base 64
-     *
      * @return результат верификации подписи
      */
     public boolean verifySignedFile(MultipartFile file, String sign) throws Exception {
@@ -129,6 +127,40 @@ public class GOST34102012Service {
         return gost34102012;
     }
 
+    /**
+     * upload private key
+     *
+     * @return ключевая пара
+     * @throws Exception /
+     */
+    public String uploadPrivateKey(String privateKey)
+            throws Exception {
+        byte[] encoded = Base64.getDecoder().decode(privateKey.getBytes());
+
+        KeyFactory keyFactory = KeyFactory.getInstance("ECGOST3410-2012", "BC");
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
+        var genPrivateKey = keyFactory.generatePrivate(keySpec);
+        gost34102012.setUpPrivateKey(genPrivateKey);
+        return Base64.getEncoder().encodeToString(genPrivateKey.getEncoded());
+    }
+
+    /**
+     * upload private key
+     *
+     * @return ключевая пара
+     * @throws Exception /
+     */
+    public String uploadPublicKey(String publicKey)
+            throws Exception {
+        byte[] encoded = Base64.getDecoder().decode(publicKey.getBytes());
+
+        KeyFactory keyFactory = KeyFactory.getInstance("ECGOST3410-2012", "BC");
+        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(encoded);
+        var publicKeyGen = keyFactory.generatePublic(keySpec);
+        gost34102012.setUpPublicKey(publicKeyGen);
+        return Base64.getEncoder().encodeToString(publicKeyGen.getEncoded());
+    }
+
 
     private boolean verify(PublicKey publicKey,
                            byte[] data, byte[] signature) {
@@ -152,7 +184,6 @@ public class GOST34102012Service {
         }
         return checkResult;
     }
-
 
 
 }
