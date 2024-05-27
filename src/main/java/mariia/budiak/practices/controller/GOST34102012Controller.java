@@ -3,13 +3,15 @@ package mariia.budiak.practices.controller;
 import lombok.RequiredArgsConstructor;
 import mariia.budiak.practices.model.GOST34102012;
 import mariia.budiak.practices.service.GOST34102012Service;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.spec.ECGenParameterSpec;
@@ -49,5 +51,30 @@ public class GOST34102012Controller {
         return service.verify(text.getBytes(), Base64.getDecoder().decode(sign));
     }
 
+    /**
+     * подпись содержимого файла
+     * @param document для подписи
+     * @return подапись в base64
+     * @throws Exception
+     */
+    @RequestMapping(value = "/signFile", method = RequestMethod.POST,
+            consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public String signFile(@RequestPart MultipartFile document) throws Exception {
+        var bytes = service.signFile(document);
+        return Base64.getEncoder().encodeToString(bytes);
+    }
+
+    /**
+     * верификация подписи файла
+     * @param document подписанный
+     * @return подапись в base64
+     * @throws Exception
+     */
+    @RequestMapping(value = "/verifySignFile", method = RequestMethod.POST,
+            consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public boolean decryptFile(@RequestPart MultipartFile document,
+                @RequestParam String sign) throws Exception {
+        return service.verifySignedFile(document, sign);
+    }
 
 }

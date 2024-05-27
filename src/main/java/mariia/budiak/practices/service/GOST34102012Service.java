@@ -1,5 +1,6 @@
 package mariia.budiak.practices.service;
 
+import lombok.extern.slf4j.Slf4j;
 import mariia.budiak.practices.model.GOST34102012;
 import org.bouncycastle.cms.*;
 import org.bouncycastle.cms.jcajce.JcaSignerInfoGeneratorBuilder;
@@ -11,16 +12,21 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.spec.ECGenParameterSpec;
 
 import java.security.*;
+import java.util.Base64;
+import java.util.Scanner;
 import javax.annotation.PostConstruct;
 
 @Service
+@Slf4j
 public class GOST34102012Service {
 
     private GOST34102012 gost34102012 = new GOST34102012();
@@ -45,7 +51,7 @@ public class GOST34102012Service {
         KeyPairGenerator keypairGen = KeyPairGenerator.getInstance("ECGOST3410-2012", "BC");
         keypairGen.initialize(new ECGenParameterSpec("Tc26-Gost-3410-12-512-paramSetA"));
         // генерирование ключевой пары
-        System.out.println(keypairGen.getAlgorithm());
+        log.trace("алгоритм {}", keypairGen.getAlgorithm());
         gost34102012.setKeyPair(keypairGen.generateKeyPair());
         return gost34102012;
     }
@@ -61,6 +67,27 @@ public class GOST34102012Service {
         return sign(gost34102012.getKeyPair().getPrivate(), data);
     }
 
+    /**
+     * Проверка подписи на открытом ключе
+     *
+     * @param data      подписываемые данные
+     * @param signature подпись
+     * @return true - верна, false - не верна
+     * @throws Exception /
+     */
+    public boolean verify(byte[] data, byte[] signature) throws Exception {
+        return verify(gost34102012.getKeyPair().getPublic(), data, signature);
+    }
+
+    /**
+     * @param file входящий файл для подписи,
+     *
+     * @return подпись
+     */
+    public byte[] signFile(MultipartFile file) throws Exception {
+            return sign(file.getBytes());
+    }
+
     private byte[] sign(PrivateKey privateKey,
                         byte[] data) throws OperatorCreationException, CMSException, IOException {
         CMSProcessableByteArray msg = new CMSProcessableByteArray(data);
@@ -72,6 +99,16 @@ public class GOST34102012Service {
         return sigData.getEncoded();
     }
 
+    /**
+     * @param file входящий файл для подписи,
+     * @param sign подпись base 64
+     *
+     * @return результат верификации подписи
+     */
+    public boolean verifySignedFile(MultipartFile file, String sign) throws Exception {
+        return verify(file.getBytes(),
+                Base64.getDecoder().decode(sign));
+    }
 
     /**
      * генерирование ключевой пары
@@ -116,15 +153,6 @@ public class GOST34102012Service {
         return checkResult;
     }
 
-    /**
-     * Проверка подписи на открытом ключе
-     *
-     * @param data      подписываемые данные
-     * @param signature подпись
-     * @return true - верна, false - не верна
-     * @throws Exception /
-     */
-    public boolean verify(byte[] data, byte[] signature) throws Exception {
-        return verify(gost34102012.getKeyPair().getPublic(), data, signature);
-    }
+
+
 }
